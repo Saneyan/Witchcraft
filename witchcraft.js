@@ -149,7 +149,8 @@
      *      error : function
      *      username : string
      *      password : string
-     *      header : string
+     *      headerLabel : string
+     *      headerValue : string
      *  }
      * 
      *  @param  object option
@@ -157,7 +158,7 @@
     */
     self.sys.ajax = function( option ){
         var rv = verify.sys.ajax.apply( null, arguments );
-        var xhr = self.sys.getHttpRequest();
+        var xhr = self.sys.getXMLHttpRequest();
         
         if( !rv || !xhr )
             return false;
@@ -181,22 +182,20 @@
                 // Callback
                 rv.done( response, xhr.readyState, xhr.status );
             }
+            else if( xhr.readyState == 4 && xhr.status != 200 && rv.error !== null ){
+                rv.error( xhr.readyState, xhr.status );
+            }
             else if( xhr.readyState == 3 && xhr.status == 200 && rv.loading !== null ){
                 rv.loading( xhr.readyState, xhr.status );
             }
             else if( xhr.readyState == 2 && xhr.status == 200 && rv.sent !== null ){
                 rv.sent( xhr.readyState, xhr.status );
             }
-            else if( xhr.readyState == 1 && xhr.status == 200 && rv.open !== null ){
+            else if( xhr.readyState == 1 && rv.open !== null ){
                 rv.open( xhr.readyState, xhr.status );
             }
-            else if( xhr.readyState === 0 && xhr.status == 200 && rv.unsent !== null ){
+            else if( xhr.readyState === 0 && rv.unsent !== null ){
                 rv.unsent( xhr.readyState, xhr.status );
-            }
-            
-            if( xhr.status != 200 && rv.error !== null ){
-                // Error is occured.
-                rv.error( xhr.readyState, xhr.status );
             }
         };
         
@@ -209,6 +208,10 @@
             rv.ready();
 
         xhr.open( rv.methodType, rv.url, rv.async, rv.username, rv.password );
+        
+        if( rv.headerLabel && rv.headerValue )
+            xhr.setRequestHeader( rv.headerLabel, rv.headerValue );
+            
         xhr.send( rv.data );
         
         return xhr;
@@ -225,14 +228,14 @@
      *  @return object || false  < If url isn't String, return false. >
     */
     verify.sys.ajax = function( option ){
-        if( option.url !== 'string' )
+        if( typeof option.url !== 'string' )
             return false;
             
         var o = option;
         // method Type
-        o.methodType = o.methodType.match(/^[GET|POST]/) !== null ? o.methodType : 'GET';
+        o.methodType = typeof o.methodType === 'string' && o.methodType.match( /^GET|POST$/ ) !== null ? o.methodType : 'GET';
         // Data type
-        o.dataType = o.dataType(/^[xml|text]/) !== null ? o.dataType : 'text';
+        o.dataType = typeof o.methodType === 'string' && o.methodType.match( /^xml|text$/ ) !== null ? o.dataType : 'text';
         // Data
         o.data = typeof o.data === 'string' ? o.url : null;
         // Async
@@ -243,8 +246,10 @@
         o.username = typeof o.username === 'string' ? o.username : undefined;
         // Password
         o.password = typeof o.password === 'string' ? o.password : undefined;
-        // Header
-        o.header = typeof o.header === 'stirng' ? o.header : null;
+        // Header label
+        o.headerLabel = typeof o.headerLabel === 'stirng' ? o.headerLabel : null;
+        // Header value
+        o.headerValue = typeof o.headerValue === 'string' ? o.headerValue : null;
         // Done
         o.done = typeof o.done === 'function' ? o.done : null;
         // Loading
@@ -255,6 +260,17 @@
         o.open = typeof o.open === 'function' ? o.open : null;
         // Unsent
         o.unsent = typeof o.unsent === 'function' ? o.unsent : null;
+        // Ready
+        o.ready = typeof o.ready === 'function' ? o.ready : null;
+        // Error
+        o.error = typeof o.error === 'function' ? o.error : null;
+        
+        if( o.methodType === 'POST' ){
+            if( o.headerLabel === null )
+                o.headerLabel = 'Content-Type';
+            if( o.headerValue === null )
+                o.headerValue = 'application/x-www-form-urlencoded';
+        }
         
         return o;
     };
@@ -275,7 +291,7 @@
      * 
      *  @return object XMLHttpRequest
     */
-    self.sys.getXmlHttpRequest = function(){
+    self.sys.getXMLHttpRequest = function(){
         var xhr;
         try{
             xhr = new XMLHttpRequest();
@@ -311,16 +327,13 @@
      *  @param  function process
      *  @param  number delay
     */
-    self.Service = function( pid, process, delay ){
+    self.Service = function( process, delay ){
         if( typeof process !== 'function' )
             return false;
         
-        if( !pid )
-            pid = ( new Date() ).getTime();
         if( typeof delay !== 'number' )
             delay = 100;
-            
-        this.pid = pid;
+             
         this.delay = delay;
         this.process = process;
         this.status = 'stop';
@@ -376,10 +389,20 @@
             
         if( !pid )
             pid = ( new Date() ).getTime();
+            
         if( typeof delay !== 'number' )
             delay = 100;
         
         var srvc = services[ pid ] = {
+            start : function(){
+                self.service.start( pid );
+            },
+            stop : function(){
+                self.service.stop( pid );
+            },
+            restart : function(){
+                self.service.restart( pid );
+            },
             pid : pid,
             process : process,
             delay : delay,
