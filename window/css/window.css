@@ -1,0 +1,82 @@
+@charset "UTF-8";
+
+.wic-window-standard-base{
+    position: absolute;
+    background: #52799E;
+}
+
+.wic-window-standard-client-area{
+    width: 100%;
+    height: 100%;
+    background: #ADADAD;
+}
+
+.wic-window-standard-top-frame{
+    height: 10px;
+    left: 10px;
+    right: 10px;
+    position: absolute;
+}
+
+.wic-window-standard-top-left-frame{
+    width: 10px;
+    height: 10px;
+    top: 0px;
+    left: 0px;
+    position: absolute;
+}
+
+.wic-window-standard-top-right-frame{
+    width: 10px;
+    height: 10px;
+    top: 0px;
+    right: 0px;
+    position: absolute;
+}
+
+.wic-window-standard-left-frame{
+    width: 10px;
+    top: 10px;
+    bottom: 10px;
+    left: 0px;
+    position: absolute;
+}
+
+.wic-window-standard-center-frame{
+    top: 10px;
+    bottom: 10px;
+    right: 10px;
+    left: 10px;
+    position: absolute;
+}
+
+.wic-window-standard-right-frame{
+    width: 10px;
+    top: 10px;
+    bottom: 10px;
+    right: 0px;
+    position: absolute;
+}
+
+.wic-window-standard-bottom-frame{
+    height: 10px;
+    left: 10px;
+    right: 10px;
+    position: absolute;
+}
+
+.wic-window-standard-bottom-left-frame{
+    width: 10px;
+    height: 10px;
+    bottom: 0px;
+    left: 0px;
+    position: absolute;
+}
+
+.wic-window-standard-bottom-right-frame{
+    width: 10px;
+    height: 10px;
+    bottom: 0px;
+    right: 0px;
+    position: absolute;
+}
