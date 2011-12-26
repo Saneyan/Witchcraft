@@ -1,7 +1,7 @@
 /**
  *  Witchcraft::Core for Developers
  * 
- *  @version 0.0.1
+ *  @version 0.0.2
  *  @author  Saneyuki Tadokoro <post@saneyuki.gfunction.com>
  * 
  *  Copyright (c) 2011, Saneyuki Tadokoro
@@ -321,102 +321,60 @@
     
     
     /**
-     *  Create independent service
+     *  Create service
      * 
      *  @param  number | string pid
      *  @param  function process
      *  @param  number delay
     */
-    self.Service = function( process, delay ){
+    self.Service = function( pid, process, delay ){
         if( typeof process !== 'function' )
             return false;
         
         if( typeof delay !== 'number' )
             delay = 100;
+            
+        if( !pid )
+            pid = ( new Date() ).getTime();
              
+        this.pid = pid;
         this.delay = delay;
         this.process = process;
         this.status = 'stop';
         this.timerId = null;
+        
+        services[ pid ] = this;
     };
     
     
     self.Service.prototype = {
         
         /**
-         *  Start independent service
+         *  Start service
         */
         start : function(){
-            if( this.status === 'running' )
-                return false;
-            this.timerId = setInterval( this.process, this.delay );
-            this.status = 'running';
+            self.service.start( this.pid );
         },
         
         /**
-         *  Stop independent service
+         *  Stop service
         */
-        stop : function(){
-            if( this.status === 'stop' )
-                return false;
-            clearInterval( this.timerId );
-            this.status = 'stop';
+        stop : function( callback ){
+            self.service.stop( this.pid, callback );
         },
         
         /**
-         *  Restart independent service
+         *  Restart service
         */
         restart : function(){
-            if( this.status === 'running' )
-                this.stop();
-            this.start();
+            self.service.restart( this.pid );
         }
     };
     
     
     
     /**
-     *  Create share service
-     * 
-     *  @param  number | string pid
-     *  @param  function process
-     *  @param  number delay
-     *  @return object
-    */
-    self.service.create = function( pid, process, delay ){
-        if( typeof process !== 'function' || services[ pid ] )
-            return false;
-            
-        if( !pid )
-            pid = ( new Date() ).getTime();
-            
-        if( typeof delay !== 'number' )
-            delay = 100;
-        
-        var srvc = services[ pid ] = {
-            start : function(){
-                self.service.start( pid );
-            },
-            stop : function(){
-                self.service.stop( pid );
-            },
-            restart : function(){
-                self.service.restart( pid );
-            },
-            pid : pid,
-            process : process,
-            delay : delay,
-            status : 'stop',
-            timerId : null
-        };
-        
-        return srvc;
-    };
-    
-    
-    
-    /**
-     *  Remove share service
+     *  Remove service
      * 
      *  @param  number | string pid
     */
@@ -425,16 +383,20 @@
         if( !srvc )
             return false;
             
-        if( srvc.status === 'running' )
-            self.service.stop( pid );
+        var del = function(){
+            delete services[ pid ];
+        };
             
-        delete services[ pid ];
+        if( srvc.status === 'running' )
+            self.service.stop( pid, del );
+        else
+            del();
     };
     
     
     
     /**
-     *  Start share service
+     *  Start service
      * 
      *  @param  number | string pid
     */
@@ -443,22 +405,50 @@
         if( srvc.status === 'running' || !srvc )
             return false;
         
-        srvc.timerId = setInterval( srvc.process, srvc.delay );
+        var itvl = function(){ srvc.interval(); };
+        srvc.interval = function(){ srvc.process(); };
+        srvc.timerId = setInterval( itvl, srvc.delay );
         srvc.status = 'running';
     };
     
     
     
     /**
-     *  Stop share service
+     *  Stop service
      * 
      *  @param  number | string pid
+     *  @param  function callback
     */
-    self.service.stop = function( pid ){
+    self.service.stop = function( pid, callback ){
         var srvc = services[ pid ];
         if( srvc.status === 'stop' || !srvc )
             return false;
-            
+        
+        srvc.interval = function(){
+            var res = srvc.process( 'stop' );
+            if( res === true ){
+                clearInterval( srvc.timerId );
+                srvc.status = 'stop';
+                
+                if( typeof callback === 'function' )
+                    callback();
+            }
+        };
+        srvc.status = 'stopping';
+    };
+    
+    
+    
+    /**
+     *  Kill service
+     * 
+     *  @param  number | string pid
+    */
+    self.service.kill = function( pid ){
+        var srvc = services[ pid ];
+        if( srvc.status === 'stop' || !srvc )
+            return false;
+        
         clearInterval( srvc.timerId );
         srvc.status = 'stop';
     };
@@ -466,22 +456,26 @@
     
     
     /**
-     *  Restart share service
+     *  Restart service
      * 
      *  @param  number | string pid
     */
     self.service.restart = function( pid ){
         var srvc = services[ pid ];
+        var start = function(){
+            self.service.start( pid, srvc.process, srvc.delay );
+        };
+        
         if( srvc.status === 'running' )
-            self.service.stop( pid );
-        // Start service
-        self.service.start( pid, srvc.process, srvc.delay );
+            self.service.stop( pid, start );
+        else
+            start();
     };
     
     
     
     /**
-     *  Get status of share service
+     *  Get status of service
      * 
      *  @param  number | string pid
     */
