@@ -1,7 +1,7 @@
 /**
  *  Witchcraft::Window Removed Title-bar For Developers
  * 
- *  @version 0.2.7
+ *  @version 0.2.8
  *  @author  Saneyuki Tadokoro <post@saneyuki.gfunction.com>
  * 
  *  Copyright (c) 2011, Saneyuki Tadokoro
@@ -569,23 +569,72 @@
             /**
              *  Resize
             */
-            resize : function( e, type ){
+            resize : function( x, y, type ){
+                var swap = data.swap;
+                var status = data.status;
+
+                var widthPlus = swap.resizeWidth + ( swap.resizeX - x );
+                var widthMinus = swap.resizeWidth - ( swap.resizeX - x );
+                var heightPlus = swap.resizeHeight + ( swap.resizeY - y );
+                var heightMinus = swap.resizeHeight - ( swap.resizeY - y );
+                var left = swap.resizeLeft - ( swap.resizeX - x );
+                var top = swap.resizeTop - ( swap.resizeY - y );
+
                 switch( type ){
+                    // Top
                     case 'top' :
+                        status.height = heightPlus;
+                        if( status.height === heightPlus )
+                            status.top = top;
                         break;
+                        
+                    // Top left
                     case 'top-left' :
+                        status.width = widthPlus;
+                        status.height = heightPlus;
+                        if( status.width === widthPlus )
+                            status.left = left;
+                        if( status.height === heightPlus )
+                            status.top = top;
                         break;
+                    
+                    // Top right
                     case 'top-right' :
+                        status.width = widthMinus;
+                        status.height = heightPlus;
+                        if( status.height === heightPlus )
+                            status.top = top;
                         break;
+                    
+                    // Bottom
                     case 'bottom' :
+                        status.height = heightMinus;
                         break;
+                    
+                    // Bottom left
                     case 'bottom-left' :
+                        status.width = widthPlus;
+                        status.height = heightMinus;
+                        if( status.width === widthPlus )
+                            status.left = left;
                         break;
+                    
+                    // Bottom right
                     case 'bottom-right' :
+                        status.width = widthMinus;
+                        status.height = heightMinus;
                         break;
+                    
+                    // Left
                     case 'left' :
+                        status.width = widthPlus;
+                        if( status.width === widthPlus )
+                            status.left = left;
                         break;
+                    
+                    // Right
                     case 'right' :
+                        status.width = widthMinus;
                         break;
                 }
                 
@@ -637,10 +686,12 @@
              *  Set movable
             */
             setResizable : function( e, type ){
-                var moveLis = function( moveEvent ){
-                    data.control.resize( moveEvent, type );
+                var moveLis = function( re ){
+                    var rx = re ? re.pageX : event.x;
+                    var ry = re ? re.pageY : event.y;
+                    data.control.resize( rx, ry, type );
                 };
-                
+
                 var upLis = function(){
                     removeListener( 'mousemove', moveLis );
                     removeListener( 'mouseup', upLis );
@@ -659,8 +710,8 @@
                 swap.resizeHeight = base.offsetHeight;
                 swap.resizeTop = base.offsetTop;
                 swap.resizeLeft = base.offsetLeft;
-                swap.resizeX = e ? e.page : event.x;
-                swap.resizeY = e ? e.page : event.y;
+                swap.resizeX = e ? e.pageX : event.x;
+                swap.resizeY = e ? e.pageY : event.y;
                 
                 addListener( 'mousemove', moveLis );
                 addListener( 'mouseup', upLis );
@@ -673,6 +724,9 @@
              *  Set move area
             */
             setMoveArea : function( elem ){
+                if( typeof elem !== 'object' )
+                    return false;
+                    
                 addListener( 'mousedown', function( e ){
                     data.control.setMovable( e );
                 }, elem );
@@ -683,6 +737,9 @@
              *  Set resize area
             */
             setResizeArea : function( type, elem ){
+                if( typeof elem !== 'object' )
+                    return false;
+                
                 addListener( 'mousedown', function( e ){
                     data.control.setResizable( e, type );
                 }, elem );
@@ -788,7 +845,7 @@
                 var bottomLeft = document.createElement( 'div' );
                 bottomLeft.className = cn.bottomLeftFrame;
                 base.appendChild( bottomLeft );
-                data.parts.botomLeftFrame = bottomLeft;
+                data.parts.bottomLeftFrame = bottomLeft;
                 
                 // Bottom
                 var bottom = document.createElement( 'div' );
