@@ -1,7 +1,7 @@
 /**
  *  Witchcraft::Window Removed Title-bar For Developers
  * 
- *  @version 0.2.5
+ *  @version 0.2.7
  *  @author  Saneyuki Tadokoro <post@saneyuki.gfunction.com>
  * 
  *  Copyright (c) 2011, Saneyuki Tadokoro
@@ -48,11 +48,11 @@
             source = {};
 
         // Set window ID
-        if( source.id )
+        if( source.id || source.id === 0 )
             this.id = source.id;
         else
             this.id = createRandomCode();
-        
+
         // Set window theme
         if( typeof source.theme !== 'object' && win.hasTheme( source.themeName ) === true )
             this.theme = win.getTheme( source.themeName );
@@ -92,6 +92,8 @@
             this.control.minimized();
         else
             this.control.restore();
+        
+        this.control.activate();
     };
     
     
@@ -333,6 +335,25 @@
             get unfixable(){
                 return _private.unfixable;
             },
+            
+            
+            /**
+             *  Blur window
+            */
+            blur: function(){
+                var win = self.window;
+                var cur = win.getLayer( data.id );
+                win.setLayer( data.id, cur - 1 );
+                this.deactivate();
+            },
+            
+            
+            /**
+             *  Focus window
+            */
+            focus: function(){
+                this.activate();
+            },
 
 
             /**
@@ -536,7 +557,11 @@
             /**
              *  Move
             */
-            move : function( e ){
+            move : function( x, y ){
+                var status = data.status;
+                status.top = y;
+                status.left = x;
+                
                 data.callListeners( 'move' );
             },
 
@@ -572,8 +597,12 @@
              *  Set movable
             */
             setMovable : function( e ){
-                var moveLis = function( moveEvent ){
-                    data.control.move( moveEvent );
+                var moveLis = function( me ){
+                    var mx = me ? me.pageX : event.x;
+                    var my = me ? me.pageY : event.y;
+                    var x = swap.moveLeft - ( swap.moveX - mx );
+                    var y = swap.moveTop - ( swap.moveY - my );
+                    data.control.move( x, y );
                 };
                 
                 var upLis = function(){
@@ -625,7 +654,7 @@
                 
                 var base = data.parts.base;
                 var swap = data.swap;
-                
+
                 swap.resizeWidth = base.offsetWidth;
                 swap.resizeHeight = base.offsetHeight;
                 swap.resizeTop = base.offsetTop;
@@ -902,7 +931,7 @@
                     return false;
 
                 var lim = data.limit;
-                
+
                 if( typeof rv === 'string' ){
                     base.style.top = rv;
                     _private.top = rv;
@@ -1289,7 +1318,7 @@
         setActiveWindow : function( id ){
             var activeWindow = this.getActiveWindow();
             if( activeWindow )
-                activeWindow.deactivate();
+                activeWindow.control.deactivate();
                     
             this.activeWindowId = id;
             this.setLayer( id, 0 );
@@ -1310,13 +1339,13 @@
                 
             if( order === this.getLayer( id ) )
                 return;
-                
+
             var before = this.getLayer( id );
-            layers.splice( before, before );
+            layers.splice( before, 1 );
             layers.splice( order, 0, id );
-            
-            for( var i = 0; layers[ i ]; i++ ){
-                registry[ layers[ i ] ].parts.base.style.zIndex = this.globalSettings.minZIndex + i;
+
+            for( var j = 0, i = layers.length - 1; i >= 0; j++, i-- ){
+                registry[ layers[ j ] ].parts.base.style.zIndex = this.globalSettings.minZIndex + i;
             }
         },
         
@@ -1326,8 +1355,9 @@
         */
         getLayer : function( id ){
             var layers = this.layers;
-            for( var i = 0; layers[ i ]; i++ ){
-                if( layers[ i ] == id )
+
+            for( var i = 0; layers.length > i; i++ ){
+                if( layers[ i ] === id )
                     return i;
             }
             
