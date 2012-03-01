@@ -9,7 +9,7 @@
 
 
 (function(){
-    var ww = lias.window = {
+    var ww = wic.window = {
         
         /**
          *  Get theme
