@@ -7,7 +7,7 @@
  *  Copyright (c) 2011, 2012 Saneyuki Tadokoro
 */
 
-
+var wic = {};
 (function(){
     var ww = wic.window = {
         
